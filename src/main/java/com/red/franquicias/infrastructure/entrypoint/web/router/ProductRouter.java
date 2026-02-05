@@ -15,6 +15,7 @@ public class ProductRouter {
                 .POST("/franchises/{franchiseId}/branches/{branchId}/products", handler::create)
                 .PUT("/franchises/{franchiseId}/branches/{branchId}/products/{productId}", handler::updateName)
                 .PATCH("/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock", handler::updateStock)
+                .DELETE("/franchises/{franchiseId}/branches/{branchId}/products/{productId}", handler::remove)
                 .build();
     }
 }
