@@ -2,9 +2,9 @@ spring:
   application:
     name: franquicias
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/franquicias
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:admin}
+    url: r2dbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:franquicias}
+    username: ${DB_USERNAME:app}
+    password: ${DB_PASSWORD:app}
   sql:
     init:
       mode: always
