@@ -214,6 +214,126 @@ class ProductRouterIntegrationTest {
                 .jsonPath("$.error").isEqualTo("Conflict");
     }
 
+    @Test
+    void updateProductStock_shouldReturn200() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+        Long productId = createProduct(franchiseId, branchId, "Test Product", 10);
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId + "/products/" + productId + "/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(productId)
+                .jsonPath("$.branchId").isEqualTo(branchId)
+                .jsonPath("$.name").isEqualTo("Test Product")
+                .jsonPath("$.stock").isEqualTo(25);
+    }
+
+    @Test
+    void updateProductStock_negativeStock_shouldReturn400() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+        Long productId = createProduct(franchiseId, branchId);
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId + "/products/" + productId + "/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":-1}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400);
+    }
+
+    @Test
+    void updateProductStock_franchiseNotFound_shouldReturn404() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+        Long productId = createProduct(franchiseId, branchId);
+
+        webTestClient.patch()
+                .uri("/franchises/99999/branches/" + branchId + "/products/" + productId + "/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateProductStock_branchNotFound_shouldReturn404() {
+        Long franchiseId = createFranchise();
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId + "/branches/99999/products/99999/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateProductStock_productNotFound_shouldReturn404() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId + "/products/99999/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateProductStock_branchNotBelongsToFranchise_shouldReturn404() {
+        Long franchiseId1 = createFranchise();
+        Long franchiseId2 = createFranchise();
+        Long branchId = createBranch(franchiseId1);
+        Long productId = createProduct(franchiseId1, branchId);
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId2 + "/branches/" + branchId + "/products/" + productId + "/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateProductStock_productNotBelongsToBranch_shouldReturn404() {
+        Long franchiseId = createFranchise();
+        Long branchId1 = createBranch(franchiseId);
+        Long branchId2 = createBranch(franchiseId);
+        Long productId = createProduct(franchiseId, branchId1);
+
+        webTestClient.patch()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId2 + "/products/" + productId + "/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":25}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
     private Long createFranchise() {
         var response = webTestClient.post()
                 .uri("/franchises")
