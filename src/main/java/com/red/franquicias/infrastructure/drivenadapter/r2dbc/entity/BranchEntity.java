@@ -10,12 +10,13 @@ import org.springframework.data.relational.core.mapping.Table;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("franchises")
-public class FranchiseEntity {
+@Table("branches")
+public class BranchEntity {
     @Id
     private Long id;
+    @Column("franchise_id")
+    private Long franchiseId;
     @Column("name")
     private String name;
 }
-
 

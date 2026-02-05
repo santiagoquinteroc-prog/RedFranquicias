@@ -9,10 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FranchiseRequest {
-    @NotBlank(message = "Franchise name is required")
-    @Size(max = 60, message = "Franchise name must not exceed 60 characters")
+public class BranchRequest {
+    @NotBlank(message = "Branch name is required")
+    @Size(max = 60, message = "Branch name must not exceed 60 characters")
     private String name;
 }
-
 
