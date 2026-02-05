@@ -45,6 +45,12 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
         return repository.deleteById(id);
     }
 
+    @Override
+    public Mono<Product> findTopByBranchIdOrderByStockDesc(Long branchId) {
+        return repository.findTopByBranchIdOrderByStockDesc(branchId)
+                .map(this::toDomain);
+    }
+
     private ProductEntity toEntity(Product product) {
         return new ProductEntity(product.getId(), product.getBranchId(), product.getName(), product.getStock());
     }

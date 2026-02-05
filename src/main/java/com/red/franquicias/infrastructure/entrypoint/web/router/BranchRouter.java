@@ -13,6 +13,7 @@ public class BranchRouter {
     public RouterFunction<ServerResponse> branchRoutes(BranchHandler handler) {
         return RouterFunctions.route()
                 .POST("/franchises/{franchiseId}/branches", handler::create)
+                .PUT("/franchises/{franchiseId}/branches/{branchId}", handler::updateName)
                 .build();
     }
 }

@@ -1,6 +1,7 @@
 package com.red.franquicias.infrastructure.entrypoint.web.handler;
 
 import com.red.franquicias.application.usecase.product.CreateProductUseCase;
+import com.red.franquicias.application.usecase.product.GetTopProductsByFranchiseUseCase;
 import com.red.franquicias.application.usecase.product.RemoveProductUseCase;
 import com.red.franquicias.application.usecase.product.UpdateProductNameUseCase;
 import com.red.franquicias.application.usecase.product.UpdateProductStockUseCase;
@@ -22,12 +23,14 @@ public class ProductHandler {
     private final UpdateProductNameUseCase updateProductNameUseCase;
     private final UpdateProductStockUseCase updateProductStockUseCase;
     private final RemoveProductUseCase removeProductUseCase;
+    private final GetTopProductsByFranchiseUseCase getTopProductsByFranchiseUseCase;
 
-    public ProductHandler(CreateProductUseCase createProductUseCase, UpdateProductNameUseCase updateProductNameUseCase, UpdateProductStockUseCase updateProductStockUseCase, RemoveProductUseCase removeProductUseCase) {
+    public ProductHandler(CreateProductUseCase createProductUseCase, UpdateProductNameUseCase updateProductNameUseCase, UpdateProductStockUseCase updateProductStockUseCase, RemoveProductUseCase removeProductUseCase, GetTopProductsByFranchiseUseCase getTopProductsByFranchiseUseCase) {
         this.createProductUseCase = createProductUseCase;
         this.updateProductNameUseCase = updateProductNameUseCase;
         this.updateProductStockUseCase = updateProductStockUseCase;
         this.removeProductUseCase = removeProductUseCase;
+        this.getTopProductsByFranchiseUseCase = getTopProductsByFranchiseUseCase;
     }
 
     public Mono<ServerResponse> create(ServerRequest request) {
@@ -80,6 +83,15 @@ public class ProductHandler {
         Long productId = Long.parseLong(request.pathVariable("productId"));
         return removeProductUseCase.remove(productId, branchId, franchiseId)
                 .then(ServerResponse.noContent().build());
+    }
+
+    public Mono<ServerResponse> getTopProducts(ServerRequest request) {
+        Long franchiseId = Long.parseLong(request.pathVariable("franchiseId"));
+        return getTopProductsByFranchiseUseCase.getTopProducts(franchiseId)
+                .map(ProductMapper::toTopProductsResponse)
+                .flatMap(response -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(response));
     }
 }
 

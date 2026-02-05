@@ -5,6 +5,7 @@ import com.red.franquicias.domain.model.Branch;
 import com.red.franquicias.infrastructure.drivenadapter.r2dbc.entity.BranchEntity;
 import com.red.franquicias.infrastructure.drivenadapter.r2dbc.repository.BranchRepository;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -38,6 +39,12 @@ public class BranchRepositoryAdapter implements BranchRepositoryPort {
     public Mono<Boolean> existsByNameAndFranchiseId(String name, Long franchiseId) {
         return repository.findByNameAndFranchiseId(name, franchiseId)
                 .hasElement();
+    }
+
+    @Override
+    public Flux<Branch> findByFranchiseId(Long franchiseId) {
+        return repository.findByFranchiseId(franchiseId)
+                .map(this::toDomain);
     }
 
     private BranchEntity toEntity(Branch branch) {

@@ -145,6 +145,150 @@ class BranchRouterIntegrationTest {
                 .jsonPath("$.error").isEqualTo("Not Found");
     }
 
+    @Test
+    void updateBranchName_shouldReturn200() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"New Branch Name\"}")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(branchId)
+                .jsonPath("$.franchiseId").isEqualTo(franchiseId)
+                .jsonPath("$.name").isEqualTo("New Branch Name");
+    }
+
+    @Test
+    void updateBranchName_notFound_shouldReturn404() {
+        Long franchiseId = createFranchise();
+
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId + "/branches/99999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"New Name\"}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateBranchName_franchiseNotFound_shouldReturn404() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+
+        webTestClient.put()
+                .uri("/franchises/99999/branches/" + branchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"New Name\"}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateBranchName_branchNotBelongsToFranchise_shouldReturn404() {
+        Long franchiseId1 = createFranchise();
+        Long franchiseId2 = createFranchise();
+        Long branchId = createBranch(franchiseId1);
+
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId2 + "/branches/" + branchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"New Name\"}")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void updateBranchName_duplicateName_shouldReturn409() {
+        Long franchiseId = createFranchise();
+        Long branchId1 = createBranch(franchiseId, "First Branch");
+        Long branchId2 = createBranch(franchiseId, "Second Branch");
+
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId2)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"First Branch\"}")
+                .exchange()
+                .expectStatus().isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(409)
+                .jsonPath("$.error").isEqualTo("Conflict");
+    }
+
+    @Test
+    void updateBranchName_emptyName_shouldReturn400() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"\"}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400);
+    }
+
+    @Test
+    void updateBranchName_nameTooLong_shouldReturn400() {
+        Long franchiseId = createFranchise();
+        Long branchId = createBranch(franchiseId);
+
+        String longName = "a".repeat(61);
+        webTestClient.put()
+                .uri("/franchises/" + franchiseId + "/branches/" + branchId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"" + longName + "\"}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400);
+    }
+
+    private Long createFranchise() {
+        var response = webTestClient.post()
+                .uri("/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"Test Franchise " + System.currentTimeMillis() + "\"}")
+                .exchange()
+                .expectStatus().isCreated()
+                .returnResult(String.class)
+                .getResponseBody()
+                .blockFirst();
+        return extractId(response);
+    }
+
+    private Long createBranch(Long franchiseId) {
+        return createBranch(franchiseId, "Test Branch " + System.currentTimeMillis());
+    }
+
+    private Long createBranch(Long franchiseId, String name) {
+        var response = webTestClient.post()
+                .uri("/franchises/" + franchiseId + "/branches")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"" + name + "\"}")
+                .exchange()
+                .expectStatus().isCreated()
+                .returnResult(String.class)
+                .getResponseBody()
+                .blockFirst();
+        return extractId(response);
+    }
+
     private Long extractId(String jsonResponse) {
         int idIndex = jsonResponse.indexOf("\"id\":");
         if (idIndex == -1) {
