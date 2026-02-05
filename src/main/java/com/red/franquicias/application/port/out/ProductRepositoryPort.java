@@ -13,5 +13,7 @@ public interface ProductRepositoryPort {
     Mono<Boolean> existsByNameAndBranchId(String name, Long branchId);
 
     Mono<Void> deleteById(Long id);
+
+    Mono<Product> findTopByBranchIdOrderByStockDesc(Long branchId);
 }
 

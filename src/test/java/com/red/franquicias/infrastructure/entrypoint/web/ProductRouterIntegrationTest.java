@@ -420,6 +420,68 @@ class ProductRouterIntegrationTest {
                 .jsonPath("$.error").isEqualTo("Not Found");
     }
 
+    @Test
+    void getTopProducts_franchiseNotFound_shouldReturn404() {
+        webTestClient.get()
+                .uri("/franchises/99999/branches/top-products")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found");
+    }
+
+    @Test
+    void getTopProducts_withBranchesAndProducts_shouldReturn200() {
+        Long franchiseId = createFranchise();
+        Long branchId1 = createBranch(franchiseId);
+        Long branchId2 = createBranch(franchiseId);
+        createProduct(franchiseId, branchId1, "Product A", 10);
+        createProduct(franchiseId, branchId1, "Product B", 50);
+        createProduct(franchiseId, branchId2, "Product C", 30);
+        createProduct(franchiseId, branchId2, "Product D", 20);
+
+        webTestClient.get()
+                .uri("/franchises/" + franchiseId + "/branches/top-products")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.franchiseId").isEqualTo(franchiseId)
+                .jsonPath("$.franchiseName").exists()
+                .jsonPath("$.results").isArray()
+                .jsonPath("$.results.length()").isEqualTo(2)
+                .jsonPath("$.results[?(@.branchId == " + branchId1 + ")].product.stock").value(stocks -> {
+                    java.util.List<?> list = (java.util.List<?>) stocks;
+                    assert list.size() == 1;
+                    assert list.get(0).equals(50);
+                })
+                .jsonPath("$.results[?(@.branchId == " + branchId2 + ")].product.stock").value(stocks -> {
+                    java.util.List<?> list = (java.util.List<?>) stocks;
+                    assert list.size() == 1;
+                    assert list.get(0).equals(30);
+                });
+    }
+
+    @Test
+    void getTopProducts_branchWithoutProducts_isExcluded() {
+        Long franchiseId = createFranchise();
+        Long branchId1 = createBranch(franchiseId);
+        Long branchId2 = createBranch(franchiseId);
+        createProduct(franchiseId, branchId1, "Product A", 10);
+
+        webTestClient.get()
+                .uri("/franchises/" + franchiseId + "/branches/top-products")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.franchiseId").isEqualTo(franchiseId)
+                .jsonPath("$.results").isArray()
+                .jsonPath("$.results.length()").isEqualTo(1)
+                .jsonPath("$.results[0].branchId").isEqualTo(branchId1);
+    }
+
     private Long createFranchise() {
         var response = webTestClient.post()
                 .uri("/franchises")
