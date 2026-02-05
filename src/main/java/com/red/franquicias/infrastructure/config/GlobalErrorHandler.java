@@ -1,5 +1,8 @@
 package com.red.franquicias.infrastructure.config;
 
+import com.red.franquicias.domain.exception.ConflictException;
+import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.infrastructure.entrypoint.web.dto.ErrorResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -26,7 +29,16 @@ public class GlobalErrorHandler implements WebExceptionHandler {
         String error = "Internal Server Error";
         String message = ex.getMessage();
 
-        if (ex instanceof ResponseStatusException) {
+        if (ex instanceof ValidationException) {
+            status = HttpStatus.BAD_REQUEST;
+            error = "Bad Request";
+        } else if (ex instanceof NotFoundException) {
+            status = HttpStatus.NOT_FOUND;
+            error = "Not Found";
+        } else if (ex instanceof ConflictException) {
+            status = HttpStatus.CONFLICT;
+            error = "Conflict";
+        } else if (ex instanceof ResponseStatusException) {
             ResponseStatusException rse = (ResponseStatusException) ex;
             status = HttpStatus.valueOf(rse.getStatusCode().value());
             error = rse.getReason() != null ? rse.getReason() : error;
