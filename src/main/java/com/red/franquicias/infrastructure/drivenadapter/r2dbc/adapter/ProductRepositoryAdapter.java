@@ -40,6 +40,11 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
                 .hasElement();
     }
 
+    @Override
+    public Mono<Void> deleteById(Long id) {
+        return repository.deleteById(id);
+    }
+
     private ProductEntity toEntity(Product product) {
         return new ProductEntity(product.getId(), product.getBranchId(), product.getName(), product.getStock());
     }

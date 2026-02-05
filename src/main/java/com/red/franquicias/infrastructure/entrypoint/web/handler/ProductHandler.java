@@ -1,6 +1,7 @@
 package com.red.franquicias.infrastructure.entrypoint.web.handler;
 
 import com.red.franquicias.application.usecase.product.CreateProductUseCase;
+import com.red.franquicias.application.usecase.product.RemoveProductUseCase;
 import com.red.franquicias.application.usecase.product.UpdateProductNameUseCase;
 import com.red.franquicias.application.usecase.product.UpdateProductStockUseCase;
 import com.red.franquicias.domain.model.Product;
@@ -20,11 +21,13 @@ public class ProductHandler {
     private final CreateProductUseCase createProductUseCase;
     private final UpdateProductNameUseCase updateProductNameUseCase;
     private final UpdateProductStockUseCase updateProductStockUseCase;
+    private final RemoveProductUseCase removeProductUseCase;
 
-    public ProductHandler(CreateProductUseCase createProductUseCase, UpdateProductNameUseCase updateProductNameUseCase, UpdateProductStockUseCase updateProductStockUseCase) {
+    public ProductHandler(CreateProductUseCase createProductUseCase, UpdateProductNameUseCase updateProductNameUseCase, UpdateProductStockUseCase updateProductStockUseCase, RemoveProductUseCase removeProductUseCase) {
         this.createProductUseCase = createProductUseCase;
         this.updateProductNameUseCase = updateProductNameUseCase;
         this.updateProductStockUseCase = updateProductStockUseCase;
+        this.removeProductUseCase = removeProductUseCase;
     }
 
     public Mono<ServerResponse> create(ServerRequest request) {
@@ -69,6 +72,14 @@ public class ProductHandler {
                             .contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(response);
                 });
+    }
+
+    public Mono<ServerResponse> remove(ServerRequest request) {
+        Long franchiseId = Long.parseLong(request.pathVariable("franchiseId"));
+        Long branchId = Long.parseLong(request.pathVariable("branchId"));
+        Long productId = Long.parseLong(request.pathVariable("productId"));
+        return removeProductUseCase.remove(productId, branchId, franchiseId)
+                .then(ServerResponse.noContent().build());
     }
 }
 

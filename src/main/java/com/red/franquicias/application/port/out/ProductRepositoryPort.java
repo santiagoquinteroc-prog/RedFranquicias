@@ -11,5 +11,7 @@ public interface ProductRepositoryPort {
     Mono<Product> findByIdAndBranchId(Long id, Long branchId);
 
     Mono<Boolean> existsByNameAndBranchId(String name, Long branchId);
+
+    Mono<Void> deleteById(Long id);
 }
 
