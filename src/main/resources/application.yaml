@@ -13,6 +13,13 @@ spring:
 
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html
+    use-root-path: false
+  packages-to-scan: com.red.franquicias.infrastructure.entrypoint.web
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  router-operation-order: method
