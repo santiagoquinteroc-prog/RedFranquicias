@@ -7,9 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Franchise {
+public class Product {
     private Long id;
+    private Long branchId;
     private String name;
+    private Integer stock;
 }
-
 
