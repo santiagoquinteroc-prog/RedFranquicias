@@ -4,7 +4,12 @@ spring:
   r2dbc:
     url: r2dbc:mysql://localhost:3306/franquicias
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
+    password: ${DB_PASSWORD:admin}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
 
 springdoc:
   api-docs:

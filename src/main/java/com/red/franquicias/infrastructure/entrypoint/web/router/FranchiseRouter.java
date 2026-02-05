@@ -1,6 +1,6 @@
 package com.red.franquicias.infrastructure.entrypoint.web.router;
 
-import com.red.franquicias.infrastructure.entrypoint.web.handler.HealthHandler;
+import com.red.franquicias.infrastructure.entrypoint.web.handler.FranchiseHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -8,11 +8,12 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 @Configuration
-public class HealthRouter {
+public class FranchiseRouter {
     @Bean
-    public RouterFunction<ServerResponse> healthRoutes(HealthHandler handler) {
+    public RouterFunction<ServerResponse> franchiseRoutes(FranchiseHandler handler) {
         return RouterFunctions.route()
-                .GET("/health", handler::health)
+                .POST("/franchises", handler::create)
+                .PUT("/franchises/{id}", handler::updateName)
                 .build();
     }
 }
