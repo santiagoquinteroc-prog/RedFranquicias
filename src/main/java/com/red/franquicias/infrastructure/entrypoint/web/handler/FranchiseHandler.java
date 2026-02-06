@@ -55,7 +55,7 @@ public class FranchiseHandler {
     public Mono<ServerResponse> updateName(ServerRequest request) {
         Long id = Long.parseLong(request.pathVariable("id"));
         return request.bodyToMono(FranchiseRequest.class)
-                .flatMap(franchiseRequest -> updateFranchiseNameUseCase.updateName(id, franchiseRequest.getName()))
+                .flatMap(franchiseRequest -> updateFranchiseNameUseCase.updateName(id, franchiseRequest.name()))
                 .flatMap(franchise -> {
                     var response = FranchiseMapper.toResponse(franchise);
                     return ServerResponse.ok()

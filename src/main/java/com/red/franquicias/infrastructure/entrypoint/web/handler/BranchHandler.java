@@ -58,7 +58,7 @@ public class BranchHandler {
         Long franchiseId = Long.parseLong(request.pathVariable("franchiseId"));
         Long branchId = Long.parseLong(request.pathVariable("branchId"));
         return request.bodyToMono(BranchRequest.class)
-                .flatMap(branchRequest -> updateBranchNameUseCase.updateName(branchId, franchiseId, branchRequest.getName()))
+                .flatMap(branchRequest -> updateBranchNameUseCase.updateName(branchId, franchiseId, branchRequest.name()))
                 .flatMap(branch -> {
                     var response = BranchMapper.toResponse(branch);
                     return ServerResponse.ok()

@@ -72,7 +72,7 @@ public class ProductHandler {
         Long branchId = Long.parseLong(request.pathVariable("branchId"));
         Long productId = Long.parseLong(request.pathVariable("productId"));
         return request.bodyToMono(UpdateProductNameRequest.class)
-                .flatMap(updateRequest -> updateProductNameUseCase.updateName(productId, branchId, franchiseId, updateRequest.getName()))
+                .flatMap(updateRequest -> updateProductNameUseCase.updateName(productId, branchId, franchiseId, updateRequest.name()))
                 .flatMap(product -> {
                     var response = ProductMapper.toResponse(product);
                     return ServerResponse.ok()
@@ -90,7 +90,7 @@ public class ProductHandler {
         Long branchId = Long.parseLong(request.pathVariable("branchId"));
         Long productId = Long.parseLong(request.pathVariable("productId"));
         return request.bodyToMono(UpdateProductStockRequest.class)
-                .flatMap(updateRequest -> updateProductStockUseCase.updateStock(productId, branchId, franchiseId, updateRequest.getStock()))
+                .flatMap(updateRequest -> updateProductStockUseCase.updateStock(productId, branchId, franchiseId, updateRequest.stock()))
                 .flatMap(product -> {
                     var response = ProductMapper.toResponse(product);
                     return ServerResponse.ok()

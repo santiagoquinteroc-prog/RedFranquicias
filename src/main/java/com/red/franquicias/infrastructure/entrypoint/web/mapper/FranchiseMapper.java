@@ -7,7 +7,7 @@ import com.red.franquicias.infrastructure.entrypoint.web.dto.FranchiseResponse;
 
 public class FranchiseMapper {
     public static Franchise toDomain(FranchiseRequest request) {
-        return new Franchise(null, request.getName());
+        return new Franchise(null, request.name());
     }
 
     public static FranchiseResponse toResponse(Franchise franchise) {
@@ -22,5 +22,6 @@ public class FranchiseMapper {
         return new Franchise(entity.getId(), entity.getName());
     }
 }
+
 
 
