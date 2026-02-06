@@ -1,3 +1,25 @@
 spring:
   application:
     name: franquicias
+  r2dbc:
+    url: r2dbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:franquicias}
+    username: ${DB_USERNAME:app}
+    password: ${DB_PASSWORD:app}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    use-root-path: false
+  packages-to-scan: com.red.franquicias.infrastructure.entrypoint.web
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  router-operation-order: method
