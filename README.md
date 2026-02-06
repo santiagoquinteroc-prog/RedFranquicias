@@ -1,37 +1,55 @@
-# Franchises API
+## Franchises API
 
-## Requisitos
+### Requisitos
 - Java 17
 - Docker
+- Docker Compose
 
-## MySQL local
+### Levantar todo con Docker (app + base de datos)
+Desde la raíz del proyecto:
 ```bash
-docker compose up -d
+docker-compose up --build
+```
+Esto va a:
+- Construir la imagen de la aplicación usando el `Dockerfile`
+- Levantar el contenedor de la API en `http://localhost:8080`
+- Levantar MySQL en el puerto `3307` de tu máquina (internamente `3306` en el contenedor)
+
+Para detener y limpiar contenedores/volúmenes:
+```bash
+docker-compose down
 ```
 
-## Ejecutar
-```bash
-./gradlew bootRun
-```
+### Ejecutar localmente (sin Docker para la app)
+1. Levantar solo la base de datos con Docker:
+   ```bash
+   docker-compose up -d mysql
+   ```
+2. Ejecutar la aplicación con Gradle:
+   ```bash
+   ./gradlew bootRun
+   ```
 
-## Swagger UI
-- http://localhost:8080/swagger-ui.html
+La app se expone en `http://localhost:8080` y se conecta al MySQL de Docker mediante R2DBC.
 
-## Tests
+### Swagger UI
+- `http://localhost:8080/swagger-ui.html`
+
+### Tests
 ```bash
 ./gradlew test
 ```
 
-## Estructura del Proyecto
+### Estructura del Proyecto
 
-El proyecto sigue Clean Architecture con tres capas principales:
+El proyecto sigue Clean Architecture con capas principales:
 
 - **Domain Layer**: Entidades de negocio, lógica de validación y excepciones de dominio
 - **Application Layer**: Casos de uso (lógica de negocio) e interfaces de puertos
 - **Infrastructure Layer**: Repositorios R2DBC, adaptadores y configuración
 - **Entrypoint Layer**: Handlers HTTP usando Spring WebFlux Router Functions
 
-## Endpoints
+### Endpoints
 
 - `POST /franchises` - Crear franquicia
 - `PUT /franchises/{id}` - Actualizar nombre de franquicia
