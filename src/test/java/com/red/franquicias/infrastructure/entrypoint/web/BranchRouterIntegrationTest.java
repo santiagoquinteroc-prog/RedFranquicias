@@ -1,5 +1,6 @@
 package com.red.franquicias.infrastructure.entrypoint.web;
 
+import com.red.franquicias.infrastructure.config.TestDatabaseCleaner;
 import com.red.franquicias.infrastructure.config.TestR2dbcConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,16 +13,20 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration")
-@Import(TestR2dbcConfig.class)
+@Import({TestR2dbcConfig.class, TestDatabaseCleaner.class})
 class BranchRouterIntegrationTest {
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private TestDatabaseCleaner databaseCleaner;
     
     private WebTestClient webTestClient;
     
     @BeforeEach
     void setUp() {
         webTestClient = WebTestClient.bindToApplicationContext(applicationContext).build();
+        databaseCleaner.cleanAll().block();
     }
 
     @Test
