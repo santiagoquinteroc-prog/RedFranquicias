@@ -63,11 +63,11 @@ class GetTopProductsByFranchiseUseCaseImplTest {
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
-                    assertEquals(1L, result.getFranchiseId());
-                    assertEquals("Test Franchise", result.getFranchiseName());
-                    assertEquals(2, result.getResults().size());
-                    assertTrue(result.getResults().stream().anyMatch(r -> r.getBranchId().equals(1L) && r.getProduct().getStock().equals(50)));
-                    assertTrue(result.getResults().stream().anyMatch(r -> r.getBranchId().equals(2L) && r.getProduct().getStock().equals(30)));
+                    assertEquals(1L, result.franchiseId());
+                    assertEquals("Test Franchise", result.franchiseName());
+                    assertEquals(2, result.results().size());
+                    assertTrue(result.results().stream().anyMatch(r -> r.branchId().equals(1L) && r.product().stock().equals(50)));
+                    assertTrue(result.results().stream().anyMatch(r -> r.branchId().equals(2L) && r.product().stock().equals(30)));
                 })
                 .verifyComplete();
     }
@@ -81,9 +81,9 @@ class GetTopProductsByFranchiseUseCaseImplTest {
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
-                    assertEquals(1L, result.getFranchiseId());
-                    assertEquals("Test Franchise", result.getFranchiseName());
-                    assertTrue(result.getResults().isEmpty());
+                    assertEquals(1L, result.franchiseId());
+                    assertEquals("Test Franchise", result.franchiseName());
+                    assertTrue(result.results().isEmpty());
                 })
                 .verifyComplete();
     }
@@ -99,12 +99,12 @@ class GetTopProductsByFranchiseUseCaseImplTest {
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
-                    assertEquals(1L, result.getFranchiseId());
-                    assertEquals("Test Franchise", result.getFranchiseName());
-                    assertEquals(1, result.getResults().size());
-                    assertEquals(1L, result.getResults().get(0).getBranchId());
-                    assertEquals("Branch 1", result.getResults().get(0).getBranchName());
-                    assertEquals(50, result.getResults().get(0).getProduct().getStock());
+                    assertEquals(1L, result.franchiseId());
+                    assertEquals("Test Franchise", result.franchiseName());
+                    assertEquals(1, result.results().size());
+                    assertEquals(1L, result.results().get(0).branchId());
+                    assertEquals("Branch 1", result.results().get(0).branchName());
+                    assertEquals(50, result.results().get(0).product().stock());
                 })
                 .verifyComplete();
     }
@@ -119,4 +119,5 @@ class GetTopProductsByFranchiseUseCaseImplTest {
                 .verify();
     }
 }
+
 

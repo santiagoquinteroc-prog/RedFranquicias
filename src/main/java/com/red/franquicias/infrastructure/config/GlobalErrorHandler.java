@@ -58,11 +58,11 @@ public class GlobalErrorHandler implements WebExceptionHandler {
 
         String json = String.format(
                 "{\"timestamp\":\"%s\",\"path\":\"%s\",\"status\":%d,\"error\":\"%s\",\"message\":\"%s\"}",
-                errorResponse.getTimestamp(),
-                errorResponse.getPath(),
-                errorResponse.getStatus(),
-                errorResponse.getError(),
-                errorResponse.getMessage()
+                errorResponse.timestamp(),
+                errorResponse.path(),
+                errorResponse.status(),
+                errorResponse.error(),
+                errorResponse.message()
         );
 
         DataBuffer buffer = bufferFactory.wrap(json.getBytes(StandardCharsets.UTF_8));
