@@ -1,4 +1,19 @@
 services:
+  app:
+    build: .
+    container_name: franquicias_app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: franquicias
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   mysql:
     image: mysql:8.0
     container_name: franquicias_db

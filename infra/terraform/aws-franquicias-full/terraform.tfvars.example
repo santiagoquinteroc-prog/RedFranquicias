@@ -1,0 +1,11 @@
+aws_region    = "us-east-2"
+project_name  = "red-franquicias"
+environment   = "prod"
+container_port = 8080
+desired_count  = 1
+image_tag      = "latest"
+db_name        = "franchises_db"
+
+db_username = "admin"
+db_password = "CHANGE_ME_SECURE_PASSWORD"
+
