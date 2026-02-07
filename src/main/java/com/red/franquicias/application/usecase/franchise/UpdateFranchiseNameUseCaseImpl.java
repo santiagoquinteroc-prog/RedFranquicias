@@ -3,14 +3,15 @@ package com.red.franquicias.application.usecase.franchise;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.domain.exception.ConflictException;
 import com.red.franquicias.domain.exception.NotFoundException;
-import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.domain.model.Franchise;
-import com.red.franquicias.domain.validator.FranchiseValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Mono;
 
 @Service
+@Validated
 public class UpdateFranchiseNameUseCaseImpl implements UpdateFranchiseNameUseCase {
+
     private final FranchiseRepositoryPort repositoryPort;
 
     public UpdateFranchiseNameUseCaseImpl(FranchiseRepositoryPort repositoryPort) {
@@ -18,13 +19,9 @@ public class UpdateFranchiseNameUseCaseImpl implements UpdateFranchiseNameUseCas
     }
 
     @Override
-    public Mono<Franchise> updateName(Long id, String name) {
-        try {
-            FranchiseValidator.validateName(name);
-        } catch (IllegalArgumentException e) {
-            return Mono.error(new ValidationException(e.getMessage()));
-        }
-
+    public Mono<Franchise> updateName(Long id,
+                                      String name
+    ) {
         return repositoryPort.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Franchise not found")))
                 .flatMap(existing -> repositoryPort.existsByName(name)
@@ -37,5 +34,3 @@ public class UpdateFranchiseNameUseCaseImpl implements UpdateFranchiseNameUseCas
                         }));
     }
 }
-
-

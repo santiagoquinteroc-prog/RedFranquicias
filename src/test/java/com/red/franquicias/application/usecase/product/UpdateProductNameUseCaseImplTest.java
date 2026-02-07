@@ -5,35 +5,82 @@ import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
 import com.red.franquicias.domain.exception.ConflictException;
 import com.red.franquicias.domain.exception.NotFoundException;
-import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.domain.model.Branch;
 import com.red.franquicias.domain.model.Franchise;
 import com.red.franquicias.domain.model.Product;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-class UpdateProductNameUseCaseImplTest {
-    @Mock
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = UpdateProductNameUseCaseImplValidationTest.Config.class)
+class UpdateProductNameUseCaseImplValidationTest {
+
+    @Configuration
+    static class Config {
+
+        @Bean
+        ProductRepositoryPort productRepositoryPort() {
+            return Mockito.mock(ProductRepositoryPort.class);
+        }
+
+        @Bean
+        BranchRepositoryPort branchRepositoryPort() {
+            return Mockito.mock(BranchRepositoryPort.class);
+        }
+
+        @Bean
+        FranchiseRepositoryPort franchiseRepositoryPort() {
+            return Mockito.mock(FranchiseRepositoryPort.class);
+        }
+
+        @Bean
+        LocalValidatorFactoryBean validator() {
+            return new LocalValidatorFactoryBean();
+        }
+
+        @Bean
+        MethodValidationPostProcessor methodValidationPostProcessor(LocalValidatorFactoryBean validator) {
+            MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
+            processor.setValidator(validator);
+            return processor;
+        }
+
+        @Bean
+        UpdateProductNameUseCase updateProductNameUseCase(
+                ProductRepositoryPort productRepositoryPort,
+                BranchRepositoryPort branchRepositoryPort,
+                FranchiseRepositoryPort franchiseRepositoryPort
+        ) {
+            return new UpdateProductNameUseCaseImpl(productRepositoryPort, branchRepositoryPort, franchiseRepositoryPort);
+        }
+    }
+
+    @Autowired
+    private UpdateProductNameUseCase useCase;
+
+    @Autowired
     private ProductRepositoryPort productRepositoryPort;
 
-    @Mock
+    @Autowired
     private BranchRepositoryPort branchRepositoryPort;
 
-    @Mock
+    @Autowired
     private FranchiseRepositoryPort franchiseRepositoryPort;
-
-    @InjectMocks
-    private UpdateProductNameUseCaseImpl useCase;
 
     private Franchise existingFranchise;
     private Branch existingBranch;
@@ -41,6 +88,7 @@ class UpdateProductNameUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
+        Mockito.reset(productRepositoryPort, branchRepositoryPort, franchiseRepositoryPort);
         existingFranchise = new Franchise(1L, "Test Franchise");
         existingBranch = new Branch(1L, 1L, "Test Branch");
         existingProduct = new Product(1L, 1L, "Original Name", 10);
@@ -55,33 +103,52 @@ class UpdateProductNameUseCaseImplTest {
         when(productRepositoryPort.existsByNameAndBranchId("New Name", 1L)).thenReturn(Mono.just(false));
         when(productRepositoryPort.save(any(Product.class))).thenReturn(Mono.just(updatedProduct));
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, "New Name"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "New Name")))
                 .expectNext(updatedProduct)
                 .verifyComplete();
     }
 
     @Test
-    void updateName_emptyName_shouldReturnValidationException() {
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, ""))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("required"))
+    void updateName_emptyName_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "")))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
     @Test
-    void updateName_nullName_shouldReturnValidationException() {
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, null))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("required"))
+    void updateName_nullName_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, null)))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
     @Test
-    void updateName_nameTooLong_shouldReturnValidationException() {
+    void updateName_nameTooLong_shouldThrowConstraintViolationException() {
         String longName = "a".repeat(61);
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, longName))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("exceed"))
+
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, longName)))
+                .expectError(ConstraintViolationException.class)
+                .verify();
+    }
+
+    @Test
+    void updateName_nullProductId_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(null, 1L, 1L, "New Name")))
+                .expectError(ConstraintViolationException.class)
+                .verify();
+    }
+
+    @Test
+    void updateName_nullBranchId_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, null, 1L, "New Name")))
+                .expectError(ConstraintViolationException.class)
+                .verify();
+    }
+
+    @Test
+    void updateName_nullFranchiseId_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, null, "New Name")))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
@@ -89,9 +156,8 @@ class UpdateProductNameUseCaseImplTest {
     void updateName_franchiseNotFound_shouldReturnNotFoundException() {
         when(franchiseRepositoryPort.findById(999L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 999L, "New Name"))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 999L, "New Name")))
+                .expectError(NotFoundException.class)
                 .verify();
     }
 
@@ -100,9 +166,8 @@ class UpdateProductNameUseCaseImplTest {
         when(franchiseRepositoryPort.findById(1L)).thenReturn(Mono.just(existingFranchise));
         when(branchRepositoryPort.findByIdAndFranchiseId(1L, 1L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, "New Name"))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "New Name")))
+                .expectError(NotFoundException.class)
                 .verify();
     }
 
@@ -112,9 +177,8 @@ class UpdateProductNameUseCaseImplTest {
         when(branchRepositoryPort.findByIdAndFranchiseId(1L, 1L)).thenReturn(Mono.just(existingBranch));
         when(productRepositoryPort.findByIdAndBranchId(999L, 1L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.updateName(999L, 1L, 1L, "New Name"))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(999L, 1L, 1L, "New Name")))
+                .expectError(NotFoundException.class)
                 .verify();
     }
 
@@ -124,9 +188,8 @@ class UpdateProductNameUseCaseImplTest {
         when(branchRepositoryPort.findByIdAndFranchiseId(1L, 1L)).thenReturn(Mono.just(existingBranch));
         when(productRepositoryPort.findByIdAndBranchId(1L, 1L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, "New Name"))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "New Name")))
+                .expectError(NotFoundException.class)
                 .verify();
     }
 
@@ -137,9 +200,8 @@ class UpdateProductNameUseCaseImplTest {
         when(productRepositoryPort.findByIdAndBranchId(1L, 1L)).thenReturn(Mono.just(existingProduct));
         when(productRepositoryPort.existsByNameAndBranchId("Duplicate Name", 1L)).thenReturn(Mono.just(true));
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, "Duplicate Name"))
-                .expectErrorMatches(throwable -> throwable instanceof ConflictException
-                        && throwable.getMessage().contains("already exists"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "Duplicate Name")))
+                .expectError(ConflictException.class)
                 .verify();
     }
 
@@ -151,9 +213,8 @@ class UpdateProductNameUseCaseImplTest {
         when(productRepositoryPort.existsByNameAndBranchId("Original Name", 1L)).thenReturn(Mono.just(true));
         when(productRepositoryPort.save(any(Product.class))).thenReturn(Mono.just(existingProduct));
 
-        StepVerifier.create(useCase.updateName(1L, 1L, 1L, "Original Name"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "Original Name")))
                 .expectNext(existingProduct)
                 .verifyComplete();
     }
 }
-

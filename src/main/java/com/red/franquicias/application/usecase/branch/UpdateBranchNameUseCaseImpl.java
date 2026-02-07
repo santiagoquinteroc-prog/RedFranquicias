@@ -4,13 +4,13 @@ import com.red.franquicias.application.port.out.BranchRepositoryPort;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.domain.exception.ConflictException;
 import com.red.franquicias.domain.exception.NotFoundException;
-import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.domain.model.Branch;
-import com.red.franquicias.domain.validator.BranchValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Mono;
 
 @Service
+@Validated
 public class UpdateBranchNameUseCaseImpl implements UpdateBranchNameUseCase {
     private final BranchRepositoryPort branchRepositoryPort;
     private final FranchiseRepositoryPort franchiseRepositoryPort;
@@ -21,13 +21,11 @@ public class UpdateBranchNameUseCaseImpl implements UpdateBranchNameUseCase {
     }
 
     @Override
-    public Mono<Branch> updateName(Long branchId, Long franchiseId, String name) {
-        try {
-            BranchValidator.validateName(name);
-        } catch (IllegalArgumentException e) {
-            return Mono.error(new ValidationException(e.getMessage()));
-        }
-
+    public Mono<Branch> updateName(
+            Long branchId,
+            Long franchiseId,
+            String name
+    ) {
         return franchiseRepositoryPort.findById(franchiseId)
                 .switchIfEmpty(Mono.error(new NotFoundException("Franchise not found")))
                 .flatMap(franchise -> branchRepositoryPort.findByIdAndFranchiseId(branchId, franchiseId)

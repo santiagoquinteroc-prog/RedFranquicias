@@ -4,6 +4,7 @@ import com.red.franquicias.domain.exception.ConflictException;
 import com.red.franquicias.domain.exception.NotFoundException;
 import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.infrastructure.entrypoint.web.dto.ErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -29,7 +30,15 @@ public class GlobalErrorHandler implements WebExceptionHandler {
         String error = "Internal Server Error";
         String message = ex.getMessage();
 
-        if (ex instanceof ValidationException) {
+        if (ex instanceof ConstraintViolationException) {
+            status = HttpStatus.BAD_REQUEST;
+            error = "Bad Request";
+            ConstraintViolationException cve = (ConstraintViolationException) ex;
+            message = cve.getConstraintViolations().stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .findFirst()
+                    .orElse("Validation error");
+        } else if (ex instanceof ValidationException) {
             status = HttpStatus.BAD_REQUEST;
             error = "Bad Request";
         } else if (ex instanceof NotFoundException) {
@@ -69,4 +78,3 @@ public class GlobalErrorHandler implements WebExceptionHandler {
         return response.writeWith(Mono.just(buffer));
     }
 }
-

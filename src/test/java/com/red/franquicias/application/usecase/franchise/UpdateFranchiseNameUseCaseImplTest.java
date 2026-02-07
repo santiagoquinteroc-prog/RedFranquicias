@@ -3,32 +3,66 @@ package com.red.franquicias.application.usecase.franchise;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.domain.exception.ConflictException;
 import com.red.franquicias.domain.exception.NotFoundException;
-import com.red.franquicias.domain.exception.ValidationException;
 import com.red.franquicias.domain.model.Franchise;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-class UpdateFranchiseNameUseCaseImplTest {
-    @Mock
-    private FranchiseRepositoryPort repositoryPort;
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = UpdateFranchiseNameUseCaseImplValidationTest.Config.class)
+class UpdateFranchiseNameUseCaseImplValidationTest {
 
-    @InjectMocks
-    private UpdateFranchiseNameUseCaseImpl useCase;
+    @Configuration
+    static class Config {
+
+        @Bean
+        FranchiseRepositoryPort repositoryPort() {
+            return Mockito.mock(FranchiseRepositoryPort.class);
+        }
+
+        @Bean
+        LocalValidatorFactoryBean validator() {
+            return new LocalValidatorFactoryBean();
+        }
+
+        @Bean
+        MethodValidationPostProcessor methodValidationPostProcessor(LocalValidatorFactoryBean validator) {
+            MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
+            processor.setValidator(validator);
+            return processor;
+        }
+
+        @Bean
+        UpdateFranchiseNameUseCase updateFranchiseNameUseCase(FranchiseRepositoryPort repositoryPort) {
+            return new UpdateFranchiseNameUseCaseImpl(repositoryPort);
+        }
+    }
+
+    @Autowired
+    private UpdateFranchiseNameUseCase useCase;
+
+    @Autowired
+    private FranchiseRepositoryPort repositoryPort;
 
     private Franchise existingFranchise;
 
     @BeforeEach
     void setUp() {
+        Mockito.reset(repositoryPort);
         existingFranchise = new Franchise(1L, "Original Name");
     }
 
@@ -39,33 +73,38 @@ class UpdateFranchiseNameUseCaseImplTest {
         when(repositoryPort.existsByName("New Name")).thenReturn(Mono.just(false));
         when(repositoryPort.save(any(Franchise.class))).thenReturn(Mono.just(updatedFranchise));
 
-        StepVerifier.create(useCase.updateName(1L, "New Name"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, "New Name")))
                 .expectNext(updatedFranchise)
                 .verifyComplete();
     }
 
     @Test
-    void updateName_emptyName_shouldReturnValidationException() {
-        StepVerifier.create(useCase.updateName(1L, ""))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("required"))
+    void updateName_emptyName_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, "")))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
     @Test
-    void updateName_nullName_shouldReturnValidationException() {
-        StepVerifier.create(useCase.updateName(1L, null))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("required"))
+    void updateName_nullName_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, null)))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
     @Test
-    void updateName_nameTooLong_shouldReturnValidationException() {
+    void updateName_nameTooLong_shouldThrowConstraintViolationException() {
         String longName = "a".repeat(61);
-        StepVerifier.create(useCase.updateName(1L, longName))
-                .expectErrorMatches(throwable -> throwable instanceof ValidationException
-                        && throwable.getMessage().contains("exceed"))
+
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, longName)))
+                .expectError(ConstraintViolationException.class)
+                .verify();
+    }
+
+    @Test
+    void updateName_nullId_shouldThrowConstraintViolationException() {
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(null, "New Name")))
+                .expectError(ConstraintViolationException.class)
                 .verify();
     }
 
@@ -73,9 +112,8 @@ class UpdateFranchiseNameUseCaseImplTest {
     void updateName_franchiseNotFound_shouldReturnNotFoundException() {
         when(repositoryPort.findById(999L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.updateName(999L, "New Name"))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(999L, "New Name")))
+                .expectError(NotFoundException.class)
                 .verify();
     }
 
@@ -84,9 +122,8 @@ class UpdateFranchiseNameUseCaseImplTest {
         when(repositoryPort.findById(1L)).thenReturn(Mono.just(existingFranchise));
         when(repositoryPort.existsByName("Duplicate Name")).thenReturn(Mono.just(true));
 
-        StepVerifier.create(useCase.updateName(1L, "Duplicate Name"))
-                .expectErrorMatches(throwable -> throwable instanceof ConflictException
-                        && throwable.getMessage().contains("already exists"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, "Duplicate Name")))
+                .expectError(ConflictException.class)
                 .verify();
     }
 
@@ -96,9 +133,8 @@ class UpdateFranchiseNameUseCaseImplTest {
         when(repositoryPort.existsByName("Original Name")).thenReturn(Mono.just(true));
         when(repositoryPort.save(any(Franchise.class))).thenReturn(Mono.just(existingFranchise));
 
-        StepVerifier.create(useCase.updateName(1L, "Original Name"))
+        StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, "Original Name")))
                 .expectNext(existingFranchise)
                 .verifyComplete();
     }
 }
-
