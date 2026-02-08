@@ -1,7 +1,8 @@
 package com.red.franquicias.application.usecase.franchise;
 
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Franchise;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,10 @@ class CreateFranchiseUseCaseImplValidationTest {
         when(repositoryPort.existsByName("Test Franchise")).thenReturn(Mono.just(true));
 
         StepVerifier.create(Mono.defer(() -> useCase.create(new Franchise(null, "Test Franchise"))))
-                .expectError(ConflictException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NAME_ALREADY_EXISTS
+                )
                 .verify();
     }
 

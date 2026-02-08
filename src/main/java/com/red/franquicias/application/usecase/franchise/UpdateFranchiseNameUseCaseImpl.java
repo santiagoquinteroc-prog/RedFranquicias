@@ -1,8 +1,9 @@
 package com.red.franquicias.application.usecase.franchise;
 
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
+import com.red.franquicias.domain.exception.TechnicalException;
 import com.red.franquicias.domain.model.Franchise;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -19,18 +20,24 @@ public class UpdateFranchiseNameUseCaseImpl implements UpdateFranchiseNameUseCas
     }
 
     @Override
-    public Mono<Franchise> updateName(Long id,
-                                      String name
-    ) {
+    public Mono<Franchise> updateName(Long id, String name) {
         return repositoryPort.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Franchise not found")))
-                .flatMap(existing -> repositoryPort.existsByName(name)
-                        .flatMap(exists -> {
-                            if (exists && !existing.getName().equals(name)) {
-                                return Mono.error(new ConflictException("Franchise name already exists"));
-                            }
-                            existing.setName(name);
-                            return repositoryPort.save(existing);
-                        }));
+                .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.FRANCHISE_NOT_FOUND)))
+                .flatMap(existing ->
+                        repositoryPort.existsByName(name)
+                                .flatMap(exists -> {
+                                    if (exists && !existing.getName().equals(name)) {
+                                        return Mono.error(new BusinessException(
+                                                TechnicalMessage.FRANCHISE_NAME_ALREADY_EXISTS
+                                        ));
+                                    }
+                                    existing.setName(name);
+                                    return repositoryPort.save(existing);
+                                })
+                )
+                .onErrorMap(
+                        ex -> !(ex instanceof BusinessException),
+                        ex -> new TechnicalException(ex, TechnicalMessage.FRANCHISE_UPDATE_NAME_ERROR)
+                );
     }
 }

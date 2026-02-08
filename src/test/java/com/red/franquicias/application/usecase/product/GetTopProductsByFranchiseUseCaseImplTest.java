@@ -1,7 +1,9 @@
 package com.red.franquicias.application.usecase.product;
 
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
+import com.red.franquicias.domain.exception.TechnicalException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -103,8 +105,27 @@ class GetTopProductsByFranchiseUseCaseImplTest {
                 .thenReturn(Flux.empty());
 
         StepVerifier.create(useCase.getTopProducts(999L))
-                .expectErrorMatches(ex -> ex instanceof NotFoundException
-                                          && ex.getMessage().toLowerCase().contains("not found"))
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
+
                 .verify();
     }
+
+    @Test
+    void getTopProducts_repositoryError_shouldReturnTechnicalException() {
+        when(productRepositoryPort.findTopProductsByFranchiseId(1L))
+                .thenReturn(Flux.error(new RuntimeException("DB down")));
+
+        StepVerifier.create(useCase.getTopProducts(1L))
+                .expectErrorMatches(ex ->
+                        ex instanceof TechnicalException te
+                        && te.getTechnicalMessage() == TechnicalMessage.TOP_PRODUCTS_QUERY_ERROR
+                        && te.getCause() != null
+                        && "DB down".equals(te.getCause().getMessage())
+                )
+                .verify();
+    }
+
 }

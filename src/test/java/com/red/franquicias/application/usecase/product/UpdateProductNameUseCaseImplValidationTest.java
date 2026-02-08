@@ -3,8 +3,8 @@ package com.red.franquicias.application.usecase.product;
 import com.red.franquicias.application.port.out.BranchRepositoryPort;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Branch;
 import com.red.franquicias.domain.model.Franchise;
 import com.red.franquicias.domain.model.Product;
@@ -157,7 +157,10 @@ class UpdateProductNameUseCaseImplValidationTest {
         when(franchiseRepositoryPort.findById(999L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 999L, "New Name")))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -167,7 +170,10 @@ class UpdateProductNameUseCaseImplValidationTest {
         when(branchRepositoryPort.findByIdAndFranchiseId(1L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "New Name")))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.BRANCH_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -178,7 +184,10 @@ class UpdateProductNameUseCaseImplValidationTest {
         when(productRepositoryPort.findByIdAndBranchId(999L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(999L, 1L, 1L, "New Name")))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.PRODUCT_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -189,7 +198,10 @@ class UpdateProductNameUseCaseImplValidationTest {
         when(productRepositoryPort.findByIdAndBranchId(1L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "New Name")))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.PRODUCT_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -201,7 +213,10 @@ class UpdateProductNameUseCaseImplValidationTest {
         when(productRepositoryPort.existsByNameAndBranchId("Duplicate Name", 1L)).thenReturn(Mono.just(true));
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, 1L, 1L, "Duplicate Name")))
-                .expectError(ConflictException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.PRODUCT_NAME_ALREADY_EXISTS
+                )
                 .verify();
     }
 

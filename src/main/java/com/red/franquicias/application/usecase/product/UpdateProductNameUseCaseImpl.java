@@ -3,8 +3,8 @@ package com.red.franquicias.application.usecase.product;
 import com.red.franquicias.application.port.out.BranchRepositoryPort;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Product;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -29,26 +29,21 @@ public class UpdateProductNameUseCaseImpl implements UpdateProductNameUseCase {
     }
 
     @Override
-    public Mono<Product> updateName(
-            Long productId,
-            Long branchId,
-            Long franchiseId,
-            String name
-    ) {
+    public Mono<Product> updateName(Long productId, Long branchId, Long franchiseId, String name) {
 
         return franchiseRepositoryPort.findById(franchiseId)
-                .switchIfEmpty(Mono.error(new NotFoundException("Franchise not found")))
+                .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.FRANCHISE_NOT_FOUND)))
                 .flatMap(franchise ->
                         branchRepositoryPort.findByIdAndFranchiseId(branchId, franchiseId)
-                                .switchIfEmpty(Mono.error(new NotFoundException("Branch not found or does not belong to franchise")))
+                                .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.BRANCH_NOT_FOUND)))
                                 .flatMap(branch ->
                                         productRepositoryPort.findByIdAndBranchId(productId, branchId)
-                                                .switchIfEmpty(Mono.error(new NotFoundException("Product not found")))
+                                                .switchIfEmpty(Mono.error(new BusinessException(TechnicalMessage.PRODUCT_NOT_FOUND)))
                                                 .flatMap(existing ->
                                                         productRepositoryPort.existsByNameAndBranchId(name, branchId)
                                                                 .flatMap(exists -> {
                                                                     if (exists && !existing.getName().equals(name)) {
-                                                                        return Mono.error(new ConflictException("Product name already exists in this branch"));
+                                                                        return Mono.error(new BusinessException(TechnicalMessage.PRODUCT_NAME_ALREADY_EXISTS));
                                                                     }
                                                                     existing.setName(name);
                                                                     return productRepositoryPort.save(existing);

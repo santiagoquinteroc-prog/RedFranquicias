@@ -1,8 +1,8 @@
 package com.red.franquicias.application.usecase.franchise;
 
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Franchise;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,7 +113,10 @@ class UpdateFranchiseNameUseCaseImplValidationTest {
         when(repositoryPort.findById(999L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(999L, "New Name")))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -123,7 +126,10 @@ class UpdateFranchiseNameUseCaseImplValidationTest {
         when(repositoryPort.existsByName("Duplicate Name")).thenReturn(Mono.just(true));
 
         StepVerifier.create(Mono.defer(() -> useCase.updateName(1L, "Duplicate Name")))
-                .expectError(ConflictException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NAME_ALREADY_EXISTS
+                )
                 .verify();
     }
 

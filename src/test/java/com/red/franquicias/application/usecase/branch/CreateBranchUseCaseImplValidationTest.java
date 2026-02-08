@@ -2,8 +2,8 @@ package com.red.franquicias.application.usecase.branch;
 
 import com.red.franquicias.application.port.out.BranchRepositoryPort;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
-import com.red.franquicias.domain.exception.ConflictException;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Branch;
 import com.red.franquicias.domain.model.Franchise;
 import jakarta.validation.ConstraintViolationException;
@@ -144,7 +144,10 @@ class CreateBranchUseCaseImplValidationTest {
         Branch branch = new Branch(null, 999L, "Test Branch");
 
         StepVerifier.create(Mono.defer(() -> useCase.create(branch)))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -154,7 +157,10 @@ class CreateBranchUseCaseImplValidationTest {
         when(branchRepositoryPort.existsByNameAndFranchiseId("Test Branch", 1L)).thenReturn(Mono.just(true));
 
         StepVerifier.create(Mono.defer(() -> useCase.create(validBranch)))
-                .expectError(ConflictException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.BRANCH_NAME_ALREADY_EXISTS
+                )
                 .verify();
     }
 }

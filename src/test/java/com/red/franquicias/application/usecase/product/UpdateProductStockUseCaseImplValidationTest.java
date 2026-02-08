@@ -3,7 +3,8 @@ package com.red.franquicias.application.usecase.product;
 import com.red.franquicias.application.port.out.BranchRepositoryPort;
 import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
-import com.red.franquicias.domain.exception.NotFoundException;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
 import com.red.franquicias.domain.model.Branch;
 import com.red.franquicias.domain.model.Franchise;
 import com.red.franquicias.domain.model.Product;
@@ -159,7 +160,10 @@ class UpdateProductStockUseCaseImplValidationTest {
         when(franchiseRepositoryPort.findById(999L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateStock(1L, 1L, 999L, 25)))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -169,7 +173,10 @@ class UpdateProductStockUseCaseImplValidationTest {
         when(branchRepositoryPort.findByIdAndFranchiseId(1L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateStock(1L, 1L, 1L, 25)))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.BRANCH_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -180,7 +187,10 @@ class UpdateProductStockUseCaseImplValidationTest {
         when(productRepositoryPort.findByIdAndBranchId(999L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateStock(999L, 1L, 1L, 25)))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.PRODUCT_NOT_FOUND
+                )
                 .verify();
     }
 
@@ -191,7 +201,10 @@ class UpdateProductStockUseCaseImplValidationTest {
         when(productRepositoryPort.findByIdAndBranchId(1L, 1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(Mono.defer(() -> useCase.updateStock(1L, 1L, 1L, 25)))
-                .expectError(NotFoundException.class)
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.PRODUCT_NOT_FOUND
+                )
                 .verify();
     }
 }
