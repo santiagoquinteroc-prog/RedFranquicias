@@ -1,10 +1,12 @@
 package com.red.franquicias.infrastructure.drivenadapter.r2dbc.adapter;
 
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
+import com.red.franquicias.application.usecase.product.BranchTopProductRow;
 import com.red.franquicias.domain.model.Product;
 import com.red.franquicias.infrastructure.drivenadapter.r2dbc.entity.ProductEntity;
 import com.red.franquicias.infrastructure.drivenadapter.r2dbc.repository.ProductRepository;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -57,6 +59,11 @@ public class ProductRepositoryAdapter implements ProductRepositoryPort {
 
     private Product toDomain(ProductEntity entity) {
         return new Product(entity.getId(), entity.getBranchId(), entity.getName(), entity.getStock());
+    }
+
+    @Override
+    public Flux<BranchTopProductRow> findTopProductsByFranchiseId(Long franchiseId) {
+        return repository.findTopProductsByFranchiseId(franchiseId);
     }
 }
 

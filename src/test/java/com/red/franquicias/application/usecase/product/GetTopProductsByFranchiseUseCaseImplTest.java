@@ -1,35 +1,22 @@
 package com.red.franquicias.application.usecase.product;
 
-import com.red.franquicias.application.port.out.BranchRepositoryPort;
-import com.red.franquicias.application.port.out.FranchiseRepositoryPort;
 import com.red.franquicias.application.port.out.ProductRepositoryPort;
-import com.red.franquicias.domain.exception.NotFoundException;
-import com.red.franquicias.domain.model.Branch;
-import com.red.franquicias.domain.model.Franchise;
-import com.red.franquicias.domain.model.Product;
-import org.junit.jupiter.api.BeforeEach;
+import com.red.franquicias.domain.enums.TechnicalMessage;
+import com.red.franquicias.domain.exception.BusinessException;
+import com.red.franquicias.domain.exception.TechnicalException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GetTopProductsByFranchiseUseCaseImplTest {
-    @Mock
-    private FranchiseRepositoryPort franchiseRepositoryPort;
-
-    @Mock
-    private BranchRepositoryPort branchRepositoryPort;
 
     @Mock
     private ProductRepositoryPort productRepositoryPort;
@@ -37,52 +24,52 @@ class GetTopProductsByFranchiseUseCaseImplTest {
     @InjectMocks
     private GetTopProductsByFranchiseUseCaseImpl useCase;
 
-    private Franchise existingFranchise;
-    private Branch branch1;
-    private Branch branch2;
-    private Branch branch3;
-
-    @BeforeEach
-    void setUp() {
-        existingFranchise = new Franchise(1L, "Test Franchise");
-        branch1 = new Branch(1L, 1L, "Branch 1");
-        branch2 = new Branch(2L, 1L, "Branch 2");
-        branch3 = new Branch(3L, 1L, "Branch 3");
-    }
-
     @Test
     void getTopProducts_franchiseWithBranchesAndProducts_shouldReturnTopProducts() {
-        Product topProduct1 = new Product(1L, 1L, "Product A", 50);
-        Product topProduct2 = new Product(2L, 2L, "Product B", 30);
+        var row1 = new BranchTopProductRow(1L, "Test Franchise", 1L, "Branch 1", 10L, "Product A", 50);
+        var row2 = new BranchTopProductRow(1L, "Test Franchise", 2L, "Branch 2", 20L, "Product B", 30);
+        var row3 = new BranchTopProductRow(1L, "Test Franchise", 3L, "Branch 3", null, null, null);
 
-        when(franchiseRepositoryPort.findById(1L)).thenReturn(Mono.just(existingFranchise));
-        when(branchRepositoryPort.findByFranchiseId(1L)).thenReturn(Flux.just(branch1, branch2, branch3));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(1L)).thenReturn(Mono.just(topProduct1));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(2L)).thenReturn(Mono.just(topProduct2));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(3L)).thenReturn(Mono.empty());
+        when(productRepositoryPort.findTopProductsByFranchiseId(1L))
+                .thenReturn(Flux.just(row1, row2, row3));
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
                     assertEquals(1L, result.franchiseId());
                     assertEquals("Test Franchise", result.franchiseName());
+
                     assertEquals(2, result.results().size());
-                    assertTrue(result.results().stream().anyMatch(r -> r.branchId().equals(1L) && r.product().stock().equals(50)));
-                    assertTrue(result.results().stream().anyMatch(r -> r.branchId().equals(2L) && r.product().stock().equals(30)));
+
+                    assertTrue(result.results().stream().anyMatch(r ->
+                            r.branchId().equals(1L)
+                            && r.product() != null
+                            && r.product().stock().equals(50)
+                    ));
+
+                    assertTrue(result.results().stream().anyMatch(r ->
+                            r.branchId().equals(2L)
+                            && r.product() != null
+                            && r.product().stock().equals(30)
+                    ));
+
+                    assertFalse(result.results().stream().anyMatch(r -> r.branchId().equals(3L)));
                 })
                 .verifyComplete();
     }
 
     @Test
     void getTopProducts_franchiseWithBranchesButNoProducts_shouldReturnEmptyList() {
-        when(franchiseRepositoryPort.findById(1L)).thenReturn(Mono.just(existingFranchise));
-        when(branchRepositoryPort.findByFranchiseId(1L)).thenReturn(Flux.just(branch1, branch2));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(1L)).thenReturn(Mono.empty());
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(2L)).thenReturn(Mono.empty());
+        var row1 = new BranchTopProductRow(1L, "Test Franchise", 1L, "Branch 1", null, null, null);
+        var row2 = new BranchTopProductRow(1L, "Test Franchise", 2L, "Branch 2", null, null, null);
+
+        when(productRepositoryPort.findTopProductsByFranchiseId(1L))
+                .thenReturn(Flux.just(row1, row2));
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
                     assertEquals(1L, result.franchiseId());
                     assertEquals("Test Franchise", result.franchiseName());
+
                     assertTrue(result.results().isEmpty());
                 })
                 .verifyComplete();
@@ -90,34 +77,55 @@ class GetTopProductsByFranchiseUseCaseImplTest {
 
     @Test
     void getTopProducts_franchiseWithSomeBranchesHavingProducts_shouldReturnOnlyBranchesWithProducts() {
-        Product topProduct1 = new Product(1L, 1L, "Product A", 50);
+        var row1 = new BranchTopProductRow(1L, "Test Franchise", 1L, "Branch 1", 10L, "Product A", 50);
+        var row2 = new BranchTopProductRow(1L, "Test Franchise", 2L, "Branch 2", null, null, null);
 
-        when(franchiseRepositoryPort.findById(1L)).thenReturn(Mono.just(existingFranchise));
-        when(branchRepositoryPort.findByFranchiseId(1L)).thenReturn(Flux.just(branch1, branch2));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(1L)).thenReturn(Mono.just(topProduct1));
-        when(productRepositoryPort.findTopByBranchIdOrderByStockDesc(2L)).thenReturn(Mono.empty());
+        when(productRepositoryPort.findTopProductsByFranchiseId(1L))
+                .thenReturn(Flux.just(row1, row2));
 
         StepVerifier.create(useCase.getTopProducts(1L))
                 .assertNext(result -> {
                     assertEquals(1L, result.franchiseId());
                     assertEquals("Test Franchise", result.franchiseName());
+
                     assertEquals(1, result.results().size());
-                    assertEquals(1L, result.results().get(0).branchId());
-                    assertEquals("Branch 1", result.results().get(0).branchName());
-                    assertEquals(50, result.results().get(0).product().stock());
+
+                    var b1 = result.results().get(0);
+                    assertEquals(1L, b1.branchId());
+                    assertEquals("Branch 1", b1.branchName());
+                    assertNotNull(b1.product());
+                    assertEquals(50, b1.product().stock());
                 })
                 .verifyComplete();
     }
 
     @Test
     void getTopProducts_franchiseNotFound_shouldReturnNotFoundException() {
-        when(franchiseRepositoryPort.findById(999L)).thenReturn(Mono.empty());
+        when(productRepositoryPort.findTopProductsByFranchiseId(999L))
+                .thenReturn(Flux.empty());
 
         StepVerifier.create(useCase.getTopProducts(999L))
-                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
-                        && throwable.getMessage().contains("not found"))
+                .expectErrorMatches(ex ->
+                        ex instanceof BusinessException be
+                        && be.getTechnicalMessage() == TechnicalMessage.FRANCHISE_NOT_FOUND
+                )
+
                 .verify();
     }
+
+    @Test
+    void getTopProducts_repositoryError_shouldReturnTechnicalException() {
+        when(productRepositoryPort.findTopProductsByFranchiseId(1L))
+                .thenReturn(Flux.error(new RuntimeException("DB down")));
+
+        StepVerifier.create(useCase.getTopProducts(1L))
+                .expectErrorMatches(ex ->
+                        ex instanceof TechnicalException te
+                        && te.getTechnicalMessage() == TechnicalMessage.TOP_PRODUCTS_QUERY_ERROR
+                        && te.getCause() != null
+                        && "DB down".equals(te.getCause().getMessage())
+                )
+                .verify();
+    }
+
 }
-
-

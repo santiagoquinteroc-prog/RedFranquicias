@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.red'
@@ -42,7 +43,57 @@ dependencies {
 	testImplementation 'org.mockito:mockito-junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+jacoco {
+	toolVersion = "0.8.11"
+}
+
+def jacocoExcludes = [
+		'**/config/**',
+		'**/infrastructure/config/**',
+		'**/infrastructure/entrypoint/web/mapper/**',
+		'**/exception/**',
+		'**/*Application*'
+]
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy tasks.named('jacocoTestReport')
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	dependsOn tasks.named('test')
+
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+
+	classDirectories.setFrom(
+			sourceSets.main.output.classesDirs.asFileTree.matching {
+				exclude jacocoExcludes
+			}
+	)
+}
+
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+	dependsOn tasks.named('test')
+
+	classDirectories.setFrom(
+			sourceSets.main.output.classesDirs.asFileTree.matching {
+				exclude jacocoExcludes
+			}
+	)
+
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.80
+			}
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('jacocoTestCoverageVerification')
 }

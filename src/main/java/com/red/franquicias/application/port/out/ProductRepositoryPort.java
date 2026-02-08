@@ -1,6 +1,8 @@
 package com.red.franquicias.application.port.out;
 
+import com.red.franquicias.application.usecase.product.BranchTopProductRow;
 import com.red.franquicias.domain.model.Product;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ProductRepositoryPort {
@@ -15,5 +17,7 @@ public interface ProductRepositoryPort {
     Mono<Void> deleteById(Long id);
 
     Mono<Product> findTopByBranchIdOrderByStockDesc(Long branchId);
+
+    Flux<BranchTopProductRow> findTopProductsByFranchiseId(Long franchiseId);
 }
 
