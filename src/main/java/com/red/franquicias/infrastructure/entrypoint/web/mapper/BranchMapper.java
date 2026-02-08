@@ -7,7 +7,7 @@ import com.red.franquicias.infrastructure.entrypoint.web.dto.BranchResponse;
 
 public class BranchMapper {
     public static Branch toDomain(BranchRequest request, Long franchiseId) {
-        return new Branch(null, franchiseId, request.getName());
+        return new Branch(null, franchiseId, request.name());
     }
 
     public static BranchResponse toResponse(Branch branch) {
@@ -22,4 +22,5 @@ public class BranchMapper {
         return new Branch(entity.getId(), entity.getFranchiseId(), entity.getName());
     }
 }
+
 

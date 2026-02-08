@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class ProductMapper {
     public static Product toDomain(ProductRequest request, Long branchId) {
-        return new Product(null, branchId, request.getName(), request.getStock());
+        return new Product(null, branchId, request.name(), request.stock());
     }
 
     public static ProductResponse toResponse(Product product) {
@@ -32,22 +32,22 @@ public class ProductMapper {
     }
 
     public static TopProductsResponse toTopProductsResponse(TopProductsResult result) {
-        List<BranchTopProductResponse> results = result.getResults().stream()
+        List<BranchTopProductResponse> results = result.results().stream()
                 .map(ProductMapper::toBranchTopProductResponse)
                 .collect(Collectors.toList());
-        return new TopProductsResponse(result.getFranchiseId(), result.getFranchiseName(), results);
+        return new TopProductsResponse(result.franchiseId(), result.franchiseName(), results);
     }
 
     private static BranchTopProductResponse toBranchTopProductResponse(BranchTopProduct branchTopProduct) {
-        ProductInfo productInfo = branchTopProduct.getProduct();
+        ProductInfo productInfo = branchTopProduct.product();
         ProductInfoResponse productInfoResponse = new ProductInfoResponse(
-                productInfo.getProductId(),
-                productInfo.getName(),
-                productInfo.getStock()
+                productInfo.productId(),
+                productInfo.name(),
+                productInfo.stock()
         );
         return new BranchTopProductResponse(
-                branchTopProduct.getBranchId(),
-                branchTopProduct.getBranchName(),
+                branchTopProduct.branchId(),
+                branchTopProduct.branchName(),
                 productInfoResponse
         );
     }
